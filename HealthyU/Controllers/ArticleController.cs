@@ -1,6 +1,6 @@
 ﻿using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
-
+using HealthuU.BLL.Services.Interfaces.Logging;
 using HealthyU.Controllers.BaseController;
 
 using Microsoft.AspNetCore.Authorization;
@@ -11,20 +11,31 @@ namespace HealthyU.WebApi.Controllers;
 public class ArticleController : BaseApiController
 {
     public readonly IArticleService _articleService;
+    private readonly ILoggerService<ArticleController> _logger;
+    private readonly ILoggerService<ArticleController> _logger1;
 
-    public ArticleController(IArticleService articleService)
+    public ArticleController(IArticleService articleService, 
+        ILoggerService<ArticleController> logger,
+        ILoggerService<ArticleController> logger1)
     {
         _articleService = articleService;
+        _logger = logger;
+        _logger1 = logger1;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        //_logger.LogInformation("Request to retrieve all articles");
+        _logger.LogInformation("Logger1 ID");
+        _logger1.LogInformation("Logger2 ID");
         var result = await _articleService.GetAllArticles();
         if (result.IsSuccess)
         {
+            _logger.LogInformation($"Retrieved {result.Value.Count()} articles");
             return Ok(result.Value);
         }
+        _logger.LogWarning($"Failed to retrieve articles: {result.Error}");
         return NotFound(result.Error);
     }
 

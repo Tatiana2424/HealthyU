@@ -35,7 +35,6 @@ public static class ServiceCollectionExtensions
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         services.AddAutoMapper(currentAssemblies);
 
-        //services.AddScoped(typeof(IFact), typeof(Fact));
         services.AddScoped<ISearchKeywordService, SearchKeywordService>();
         services.AddScoped<IImageService, ImageService>();
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -44,8 +43,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<HealthuU.BLL.Services.Interfaces.IAuthenticationService, HealthuU.BLL.Services.Realizations.AuthenticationService>();
         services.AddScoped<IRecipeImportService, RecipeImportService>();
+        //services.AddTransient(typeof(ILoggerService<>), typeof(LoggerService<>));
         services.AddScoped(typeof(ILoggerService<>), typeof(LoggerService<>));
-        //services.AddScoped<IRequestHandler<GetCategoryByIdQuery, Result<CategoryDTO>>, GetCategoryByIdHandler>();
+        //services.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>));
     }
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
@@ -62,14 +62,9 @@ public static class ServiceCollectionExtensions
         {
             options.Password.RequireDigit = true;
             options.Password.RequiredLength = 6;
-            // Other password settings...
         })
         .AddEntityFrameworkStores<HealthyUDbContext>()
         .AddDefaultTokenProviders();
-        //    services.AddIdentity<User, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
-        //.AddEntityFrameworkStores<HealthyUDbContext>()
-        //.AddDefaultUI()
-        //.AddDefaultTokenProviders();
 
 
         services.AddCors(opt =>

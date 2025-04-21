@@ -6,15 +6,17 @@ namespace HealthuU.BLL.Services.Realizations.Logging
     public class LoggerService<T> : ILoggerService<T>
     {
         private ILogger<T> _logger;
+        private readonly Guid _instanceId;
 
         public LoggerService(ILogger<T> logger)
         {
             _logger = logger;
+            _instanceId = Guid.NewGuid();
         }
 
         public void LogInformation(string msg)
         {
-            _logger.Log(LogLevel.Information, $"{msg}");
+            _logger.Log(LogLevel.Information, $"[{_instanceId}] {msg}");
         }
 
         public void LogWarning(string msg)
