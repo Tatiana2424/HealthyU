@@ -14,13 +14,17 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpenAI>(builder.Configuration.GetSection("OpenAI"));
 
-// Add services to the container.
 //builder.Services.AddRazorPages();
 
 //var provider = builder.Services.BuildServiceProvider();
 //var configuration = provider.GetService<IConfiguration>();
 
 var jwtSettingsSection = builder.Configuration.GetSection("Jwt");
+//builder.WebHost.ConfigureKestrel(serverOptions =>
+//{
+//    serverOptions.ListenAnyIP(80);
+//});
+
 builder.Services.Configure<JwtSettings>(jwtSettingsSection);
 
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
