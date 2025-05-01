@@ -4,7 +4,7 @@ using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
 
 using HealthyU.Controllers.BaseController;
-
+using HealthyU.WebApi.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,6 +36,7 @@ public class RecipeController : BaseApiController
     }
 
     [HttpGet]
+    [LogExecution("Getting all recipes")]
     public async Task<IActionResult> GetAll()
     {
         var result = await _recipeService.GetAll();

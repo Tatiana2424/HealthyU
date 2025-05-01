@@ -4,7 +4,7 @@ using HealthuU.BLL.Services.Interfaces;
 using HealthuU.BLL.Services.Realizations;
 
 using HealthyU.WebApi.Configurations;
-
+using HealthyU.WebApi.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -76,6 +76,13 @@ builder.Services.AddSingleton(resolver =>
 // Add services to the container.
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+builder.Services.AddScoped<LogExecutionFilter>();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<LogExecutionFilter>();
+});
+
 
 var app = builder.Build();
 
