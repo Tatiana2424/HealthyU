@@ -35,6 +35,34 @@ public class RecipeController : BaseApiController
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> ImportRecipesFromDesktopWithIDisposable()
+    {
+        try
+        {
+            await _recipeImportService.ImportRecipesFromDesktopWithIDisposableAsync();
+            return Ok("Imported");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ImportRecipesFromDesktop()
+    {
+        try
+        {
+            await _recipeImportService.ImportRecipesFromDesktopAsync();
+            return Ok("Imported");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex);
+        }
+    }
+
     [HttpGet]
     [LogExecution("Getting all recipes")]
     public async Task<IActionResult> GetAll()

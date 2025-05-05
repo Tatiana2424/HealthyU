@@ -11,4 +11,8 @@ namespace HealthuU.BLL.Services.Interfaces;
 public interface IRecipeImportService
 {
     Task ImportRecipesAsync();
+
+    Task ImportRecipesFromDesktopWithIDisposableAsync();
+
+    Task ImportRecipesFromDesktopAsync();
 }

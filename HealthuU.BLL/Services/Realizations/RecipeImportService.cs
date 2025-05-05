@@ -1,19 +1,12 @@
 ﻿using BarberShop.BLL.DTO;
 using HealthuU.BLL.DTO;
+using HealthuU.BLL.Helpers;
 using HealthuU.BLL.Model;
 using HealthuU.BLL.Services.Interfaces;
-
+using HealthuU.BLL.Services.Interfaces.Logging;
 using HealthyU.DAL.Repositories.Interfaces;
-
 using Newtonsoft.Json;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace HealthuU.BLL.Services.Realizations;
 
@@ -22,33 +15,63 @@ public class RecipeImportService: IRecipeImportService
     private readonly IRecipeService _recipeService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IRecipeRepository _recipeRepository;
+    private readonly ILoggerService<FileResourceHolder> _logger;
 
-    public RecipeImportService(IRecipeService recipeService, IHttpClientFactory httpClientFactory, IRecipeRepository recipeRepository)
+
+    public RecipeImportService(
+        IRecipeService recipeService, 
+        IHttpClientFactory httpClientFactory, 
+        IRecipeRepository recipeRepository,
+        ILoggerService<FileResourceHolder> logger)
     {
         _recipeService = recipeService;
         _httpClientFactory = httpClientFactory;
         _recipeRepository = recipeRepository;
+        _logger = logger;
     }
 
     public async Task ImportRecipesAsync()
     {
-        //var client = _httpClientFactory.CreateClient();
-        //var requestUri = new Uri("https://tasty.p.rapidapi.com/recipes/list?from=0&size=200&tags=healthy");
-        //var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        //request.Headers.Add("X-RapidAPI-Key", "106bda5ae5mshe586f4d4be8f584p1280b9jsnc924f17b101e");
-        //request.Headers.Add("X-RapidAPI-Host", "tasty.p.rapidapi.com");
+        var client = _httpClientFactory.CreateClient();
+        var requestUri = new Uri("https://tasty.p.rapidapi.com/recipes/list?from=0&size=200&tags=healthy");
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        request.Headers.Add("X-RapidAPI-Key", "106bda5ae5mshe586f4d4be8f584p1280b9jsnc924f17b101e");
+        request.Headers.Add("X-RapidAPI-Host", "tasty.p.rapidapi.com");
 
-        //var response = await client.SendAsync(request);
-        //response.EnsureSuccessStatusCode();
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
 
-        //var content = await response.Content.ReadAsStringAsync();
-        //var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(content);
+        var content = await response.Content.ReadAsStringAsync();
+        var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(content);
 
-        //var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        //var filePath = Path.Combine(desktopPath, "recipes_healthy.json");
-        //await File.WriteAllTextAsync(filePath, content);
+        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var filePath = Path.Combine(desktopPath, "recipes_healthy.json");
+        await File.WriteAllTextAsync(filePath, content);
 
+        if (apiResponse?.Results == null)
+        {
+            return;
+        }
 
+        var existingRecipesResult = await _recipeService.GetAllBaseRecipeData();
+        if (!existingRecipesResult.IsSuccess)
+        {
+            return;
+        }
+        var existingRecipes = existingRecipesResult.Value.Select(r => r.Name).ToList();
+
+        foreach (var apiRecipe in apiResponse.Results)
+        {
+            if (!existingRecipes.Contains(apiRecipe.Name))
+            {
+                var recipeDTO = MapApiRecipeToDTO(apiRecipe);
+                await _recipeService.CreateRecipeAsync(recipeDTO);
+            }
+        }
+    }
+
+    public async Task ImportRecipesFromDesktopAsync()
+    {
         var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         var filePath = Path.Combine(desktopPath, "recipes_healthy.json");
 
@@ -62,7 +85,7 @@ public class RecipeImportService: IRecipeImportService
 
         var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(content);
 
-        if (apiResponse?.Results == null)
+        if (apiResponse?.Results is null)
         {
             return;
         }
@@ -72,6 +95,41 @@ public class RecipeImportService: IRecipeImportService
         {
             return;
         }
+        var existingRecipes = existingRecipesResult.Value.Select(r => r.Name).ToList();
+
+        foreach (var apiRecipe in apiResponse.Results)
+        {
+            if (!existingRecipes.Contains(apiRecipe.Name))
+            {
+                var recipeDTO = MapApiRecipeToDTO(apiRecipe);
+                await _recipeService.CreateRecipeAsync(recipeDTO);
+            }
+        }
+    }
+
+    public async Task ImportRecipesFromDesktopWithIDisposableAsync()
+    {
+        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var filePath = Path.Combine(desktopPath, "recipes_healthy.json");
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("File not found.");
+            return;
+        }
+
+        using var holder = new FileResourceHolder(filePath, _logger);
+        var content = await holder.ReadAllTextAsync();
+
+        var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(content);
+
+        if (apiResponse?.Results is null)
+            return;
+
+        var existingRecipesResult = await _recipeService.GetAllBaseRecipeData();
+        if (!existingRecipesResult.IsSuccess)
+            return;
+
         var existingRecipes = existingRecipesResult.Value.Select(r => r.Name).ToList();
 
         foreach (var apiRecipe in apiResponse.Results)
