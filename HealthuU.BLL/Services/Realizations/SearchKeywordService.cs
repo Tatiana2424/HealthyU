@@ -27,6 +27,11 @@ public class SearchKeywordService : ISearchKeywordService
     {
         var searchKeywords = await _repositoryWrapper.SearchKeywordRepository.GetAllAsync();
 
+        if(searchKeywords is null)
+        {
+            return Result.Success(new List<SearchKeywordDTO>());
+        }
+
         var randomSearchKeywords = searchKeywords
             .OrderBy(k => Guid.NewGuid())
             .Take(25)

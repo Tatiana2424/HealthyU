@@ -104,7 +104,9 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<List<RecipeDTO>>> GetAllBasePublishedRecipeData()
     {
-        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(a => a.IsPublished == true, include: a => a.Include(x => x.Image).Include(r => r.RecipeUserRating));
+        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(
+            predicate: a => a.IsPublished == true, 
+            include: a => a.Include(x => x.Image).Include(r => r.RecipeUserRating));
         var recipesDTO = _mapper.Map<List<RecipeDTO>>(recipes);
         return Result.Success(recipesDTO);
     }
@@ -123,7 +125,8 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<List<RecipeDTO>>> GetAll()
     {
-        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(a => a.IsPublished == true,
+        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(
+            predicate: a => a.IsPublished == true,
             include: source => source
                 .Include(r => r.Image)
                 .Include(r => r.User)
@@ -141,7 +144,8 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<List<RecipeDTO>>> GetByUserId(int userId)
     {
-        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(a => a.UserId == userId,
+        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(
+            predicate: a => a.UserId == userId,
             include: source => source
                 .Include(r => r.Image)
                 .Include(r => r.User)
@@ -158,7 +162,8 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<List<RecipeDTO>>> GetUnpublishedRecipes()
     {
-        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(a => a.IsPublished == false,
+        var recipes = await _repositoryWrapper.RecipeRepository.GetAllAsync(
+            predicate: a => a.IsPublished == false,
             include: source => source
                 .Include(r => r.Image)
                 .Include(r => r.User)
@@ -175,7 +180,8 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<RecipeDTO>> GetById(int recipeId)
     {
-        var recipe = await _repositoryWrapper.RecipeRepository.GetFirstOrDefaultAsync(a => a.Id == recipeId,
+        var recipe = await _repositoryWrapper.RecipeRepository.GetFirstOrDefaultAsync(
+            predicate: a => a.Id == recipeId,
             include: source => source
                 .Include(r => r.Image)
                 .Include(r => r.User)
@@ -279,17 +285,18 @@ public class RecipeService : IRecipeService
 
     public async Task<Result<bool>> DeleteRecipeAsync(int recipeId)
     {
-        var recipe = await _repositoryWrapper.RecipeRepository.GetFirstOrDefaultAsync(a => a.Id == recipeId,
-             include: source => source
-                 .Include(r => r.Image)
-                 .Include(r => r.User)
-                 .Include(r => r.RecipeNutrition)
-                 .Include(r => r.RecipeUserRating)
-                 .Include(r => r.TimeInfo)
-                 .Include(r => r.Ingredients)
-                 .Include(r => r.Instructions)
-                 .Include(r => r.RecipeSearchKeywords)
-                     .ThenInclude(rsk => rsk.SearchKeyword));
+        var recipe = await _repositoryWrapper.RecipeRepository.GetFirstOrDefaultAsync(
+            predicate: a => a.Id == recipeId,
+            include: source => source
+                .Include(r => r.Image)
+                .Include(r => r.User)
+                .Include(r => r.RecipeNutrition)
+                .Include(r => r.RecipeUserRating)
+                .Include(r => r.TimeInfo)
+                .Include(r => r.Ingredients)
+                .Include(r => r.Instructions)
+                .Include(r => r.RecipeSearchKeywords)
+                    .ThenInclude(rsk => rsk.SearchKeyword));
 
         if (recipe == null)
         {

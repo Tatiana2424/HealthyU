@@ -13,7 +13,7 @@ namespace HealthuU.BLL.Model;
 public class ApiRecipe
 {
     [JsonProperty("name")]
-    public string? Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     [JsonProperty("description")]
     public string? Description { get; set; }

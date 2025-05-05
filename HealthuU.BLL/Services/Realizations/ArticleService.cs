@@ -9,7 +9,7 @@ using HealthyU.DAL.Entities;
 using HealthyU.DAL.Repositories.Interfaces.Base;
 
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.EntityFrameworkCore.Query;
 using Newtonsoft.Json;
 
 using System;
@@ -35,51 +35,65 @@ public class ArticleService : IArticleService
 
     public async Task<Result<List<ArticleDTO>>> GetAllArticles()
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(include: a => a.Where(x => x.IsPublished == true).Include(x => x.Image));
+        var articles = await _repositoryWrapper
+        .ArticleRepository
+        .GetAllAsync(
+            predicate: a => a.IsPublished,
+            include: q => q.Include(x => x.Image)
+        );
         var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<List<ArticleDTO>>> GetAllArticlesWithoutSelected(int id)
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(include: a => a.Where(x => x.Id != id).Include(x => x.Image));
+        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                predicate: a => a.Id != id,
+                include: q => q.Include(x => x.Image)!
+            );
         var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<List<ArticleDTO>>> GetUnpublishedArticles()
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(include: a => a.Where(x => x.IsPublished == false).Include(x => x.Image));
+        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                predicate: a => !a.IsPublished,
+                include: q => q.Include(x => x.Image)!
+            );
         var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<ArticleDTO>> GetArticleById(int articleId)
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetFirstOrDefaultAsync(a => a.Id == articleId, include: a => a.Include(x => x.Image));
-        var articlesDTO = _mapper.Map<ArticleDTO>(articles);
+        var article = await _repositoryWrapper.ArticleRepository.GetFirstOrDefaultAsync(
+                predicate: a => a.Id == articleId,
+                include: q => q.Include(x => x.Image)!
+            );
+        var articlesDTO = _mapper.Map<ArticleDTO>(article);
         return Result.Success(articlesDTO);
     }
     public async Task<Result<List<ArticleDTO>>> GetArticlesByUserId(int userId)
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(a => a.UserId == userId, include: a => a.Include(x => x.Image));
+        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                predicate: a => a.UserId == userId,
+                include: q => q.Include(x => x.Image)!
+            );
         var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result> ImportArticlesToJsonAsync()
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(include: a => a.Include(x => x.Image));
+        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(include: a => a.Include(x => x.Image)!);
         var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
 
-        // Серіалізація в JSON
         string jsonString = System.Text.Json.JsonSerializer.Serialize(articlesDTO, new JsonSerializerOptions { WriteIndented = true });
 
-        // Шлях для збереження файлу на робочому столі
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string filePath = Path.Combine(desktopPath, "articles.json");
 
-        // Запис JSON у файл
         await File.WriteAllTextAsync(filePath, jsonString);
         return Result.Success();
     }

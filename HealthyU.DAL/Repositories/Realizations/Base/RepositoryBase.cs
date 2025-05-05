@@ -66,29 +66,29 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T>
 
     public async Task<IEnumerable<T>?> GetAllAsync(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default)
+        Func<IQueryable<T>, IQueryable<T>>? include = default)
     {
-        return await GetQueryable(predicate, include).ToListAsync() ?? new List<T>();
+        return await GetQueryable(predicate, include).ToListAsync();
     }
 
     public async Task<IEnumerable<T>?> GetAllAsync(
         Expression<Func<T, T>> selector,
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default)
+        Func<IQueryable<T>, IQueryable<T>>? include = default)
     {
         return await GetQueryable(predicate, include, selector).ToListAsync() ?? new List<T>();
     }
 
     public async Task<T?> GetSingleOrDefaultAsync(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default)
+        Func<IQueryable<T>, IQueryable<T>>? include = default)
     {
         return await GetQueryable(predicate, include).SingleOrDefaultAsync();
     }
 
     public async Task<T?> GetFirstOrDefaultAsync(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default)
+        Func<IQueryable<T>, IQueryable<T>>? include = default)
     {
         return await GetQueryable(predicate, include).FirstOrDefaultAsync();
     }
@@ -96,26 +96,26 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T>
     public async Task<T?> GetFirstOrDefaultAsync(
         Expression<Func<T, T>> selector,
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default)
+        Func<IQueryable<T>, IQueryable<T>>? include = default)
     {
         return await GetQueryable(predicate, include, selector).FirstOrDefaultAsync();
     }
 
     private IQueryable<T> GetQueryable(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default,
+        Func<IQueryable<T>, IQueryable<T>>? include = default,
         Expression<Func<T, T>>? selector = default)
     {
         var query = _dbContext.Set<T>().AsNoTracking();
 
-        if (include is not null)
-        {
-            query = include(query);
-        }
-
         if (predicate is not null)
         {
             query = query.Where(predicate);
+        }
+
+        if (include is not null)
+        {
+            query = include(query);
         }
 
         if (selector is not null)
@@ -125,4 +125,5 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T>
 
         return query;
     }
+
 }

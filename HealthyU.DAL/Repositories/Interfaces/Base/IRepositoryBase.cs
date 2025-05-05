@@ -21,24 +21,24 @@ public interface IRepositoryBase<T>
     IQueryable<T> Include(params Expression<Func<T, object>>[] includes);
 
     Task<IEnumerable<T>?> GetAllAsync(
-        Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default);
+        Expression<Func<T, bool>>? predicate = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null);
 
     Task<IEnumerable<T>?> GetAllAsync(
         Expression<Func<T, T>> selector,
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default);
+        Func<IQueryable<T>, IQueryable<T>>? include = default);
 
     Task<T?> GetSingleOrDefaultAsync(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default);
+        Func<IQueryable<T>, IQueryable<T>>? include = default);
 
     Task<T?> GetFirstOrDefaultAsync(
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default);
+        Func<IQueryable<T>, IQueryable<T>>? include = default);
 
     Task<T?> GetFirstOrDefaultAsync(
         Expression<Func<T, T>> selector,
         Expression<Func<T, bool>>? predicate = default,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default);
+        Func<IQueryable<T>, IQueryable<T>>? include = default);
 }
