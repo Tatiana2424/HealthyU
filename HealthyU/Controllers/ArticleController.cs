@@ -1,13 +1,16 @@
-﻿using HealthuU.BLL.DTO;
+﻿using Asp.Versioning;
+using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
 using HealthuU.BLL.Services.Interfaces.Logging;
 using HealthyU.Controllers.BaseController;
-
+using HealthyU.DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthyU.WebApi.Controllers;
 
+[ApiVersion("1.0")]
+[ApiVersion("2.0")]
 public class ArticleController : BaseApiController
 {
     public readonly IArticleService _articleService;
@@ -22,80 +25,84 @@ public class ArticleController : BaseApiController
         _logger = logger;
         _logger1 = logger1;
     }
-
+    /// <summary>
+    /// Retrieves all articles using the original v1 implementation.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    [MapToApiVersion("1.0")]
+    [ActionName("GetAll")]
+    public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetAllV1()
     {
-        //_logger.LogInformation("Request to retrieve all articles");
         _logger.LogInformation("Logger1 ID");
         _logger1.LogInformation("Logger2 ID");
         var result = await _articleService.GetAllArticles();
         if (result.IsSuccess)
         {
             _logger.LogInformation($"Retrieved {result.Value.Count()} articles");
+            //throw new NullReferenceException("Test exception for middleware");
             return Ok(result.Value);
         }
         _logger.LogWarning($"Failed to retrieve articles: {result.Error}");
         return NotFound(result.Error);
     }
 
+    /// <summary>
+    /// Retrieves all articles using the original v2 implementation.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetUnpublishedArticles()
+    [ActionName("GetAll")]
+    [MapToApiVersion("2.0")]
+    public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetAllV2()
     {
-        var result = await _articleService.GetUnpublishedArticles();
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return NotFound(result.Error);
+        var result = await _articleService.GetAllArticles();
+        return HandleResult(result);
     }
 
-
+    [MapToApiVersion("1.0")]
     [HttpGet]
-    public async Task<IActionResult> ImportToFile()
+    public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetUnpublishedArticles()
+    {
+        var result = await _articleService.GetUnpublishedArticles();
+        return HandleResult(result);
+    }
+
+    [MapToApiVersion("1.0")]
+    [HttpGet]
+    public async Task<ActionResult> ImportToFile()
     {
         var result = await _articleService.ImportArticlesToJsonAsync();
         if (result.IsSuccess)
         {
-            return Ok(result.IsSuccess);
+            return Ok();
         }
-        return NotFound(result.Error);
+        return BadRequest(result.Error);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ArticleDTO>> GetById(int id)
     {
         var result = await _articleService.GetArticleById(id);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return NotFound(result.Error);
+        return HandleResult(result);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetByUsetrId(int id)
+    public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetByUsetrId(int id)
     {
         var result = await _articleService.GetArticlesByUserId(id);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return NotFound(result.Error);
+        return HandleResult(result);
     }
 
-
+    [MapToApiVersion("1.0")]
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAllArticlesWithoutSelected(int id)
+    public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetAllArticlesWithoutSelected(int id)
     {
         var result = await _articleService.GetAllArticlesWithoutSelected(id);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return NotFound(result.Error);
+        return HandleResult(result);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpPost]
     public async Task<IActionResult> ImportFromFile()
     {
@@ -112,8 +119,9 @@ public class ArticleController : BaseApiController
         return BadRequest(result.Error);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ArticleDTO articleDTO)
+    public async Task<ActionResult<ArticleDTO>> Create([FromBody] ArticleDTO articleDTO)
     {
         if (!ModelState.IsValid)
         {
@@ -128,8 +136,9 @@ public class ArticleController : BaseApiController
         return BadRequest(result.Error);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] ArticleDTO articleDTO)
+    public async Task<ActionResult<ArticleDTO>> Update(int id, [FromBody] ArticleDTO articleDTO)
     {
         if (!ModelState.IsValid)
         {
@@ -137,24 +146,18 @@ public class ArticleController : BaseApiController
         }
 
         var result = await _articleService.UpdateArticle(id, articleDTO);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return BadRequest(result.Error);
+        return HandleResult(result);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpPut("{id}")]
-    public async Task<IActionResult> Publish(int id, [FromQuery] bool isPublish)
+    public async Task<ActionResult<ArticleDTO>> Publish(int id, [FromQuery] bool isPublish)
     {
         var result = await _articleService.PublishArticle(id, isPublish);
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
-        return BadRequest(result.Error);
+        return HandleResult(result);
     }
 
+    [MapToApiVersion("1.0")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

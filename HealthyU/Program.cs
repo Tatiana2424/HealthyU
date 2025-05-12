@@ -1,3 +1,5 @@
+using Asp.Versioning.ApiExplorer;
+using Asp.Versioning;
 using BarberShop.WebApi.Extensions;
 using HealthuU.BLL.Model;
 using HealthuU.BLL.Services.Interfaces;
@@ -9,21 +11,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
+
 using System.Text;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
+using HealthyU.WebApi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpenAI>(builder.Configuration.GetSection("OpenAI"));
 
-//builder.Services.AddRazorPages();
-
-//var provider = builder.Services.BuildServiceProvider();
-//var configuration = provider.GetService<IConfiguration>();
-
 var jwtSettingsSection = builder.Configuration.GetSection("Jwt");
-//builder.WebHost.ConfigureKestrel(serverOptions =>
-//{
-//    serverOptions.ListenAnyIP(80);
-//});
 
 builder.Services.Configure<JwtSettings>(jwtSettingsSection);
 
@@ -33,7 +30,52 @@ var key = Encoding.ASCII.GetBytes(jwtSettings.Key);
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services
+  .AddApiVersioning(options =>
+  {
+      options.DefaultApiVersion = new ApiVersion(1, 0);
+      options.AssumeDefaultVersionWhenUnspecified = true;
+      options.ReportApiVersions = true;
+  })
+  .AddApiExplorer(options =>
+  {
+      options.GroupNameFormat = "'v'VVV";
+      options.SubstituteApiVersionInUrl = true;
+  });
+
+builder.Services.AddSwaggerGen(c =>
+{
+    var provider = builder.Services.BuildServiceProvider()
+                      .GetRequiredService<IApiVersionDescriptionProvider>();
+
+    foreach (var desc in provider.ApiVersionDescriptions)
+    {
+        c.SwaggerDoc(desc.GroupName, new OpenApiInfo
+        {
+            Title = $"HealthyU API {desc.ApiVersion}",
+            Version = desc.GroupName,
+            Description = desc.IsDeprecated
+                ? "This API version is deprecated."
+                : "RESTful API for HealthyU",
+            Contact = new OpenApiContact
+            {
+                Name = "HealthyU Team",
+                Email = "support@healthyu.com"
+            },
+            License = new OpenApiLicense
+            {
+                Name = "MIT",
+                Url = new Uri("https://opensource.org/licenses/MIT")
+            }
+        });
+    }
+
+    // додаємо XML-документацію
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+});
+
 builder.Services.AddCustomServices();
 builder.Services.ConfigureServices(builder.Configuration);
 builder.Services.AddHttpClient();
@@ -45,7 +87,7 @@ builder.Services.AddAuthentication(x =>
 })
 .AddJwtBearer(x =>
 {
-    x.RequireHttpsMetadata = false; // For development, in production set to true
+    x.RequireHttpsMetadata = false;
     x.SaveToken = true;
     x.TokenValidationParameters = new TokenValidationParameters
     {
@@ -53,27 +95,15 @@ builder.Services.AddAuthentication(x =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
         ValidateAudience = false
-        // Set ValidateIssuer and ValidateAudience to true and set valid Issuer and Audience if needed.
     };
 });
 builder.Services.AddControllers();
-//builder.Services.AddCors(options =>
-//{
-//    var frontendURL = configuration.GetValue<string>("frontend_Url");
 
-//    options.AddDefaultPolicy(builder =>
-//    {
-//        builder.WithOrigins(frontendURL).AllowAnyMethod().AllowAnyHeader();
-//    });
-//});
-// Bind JwtSettings from appsettings.json
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-// Register JwtSettings for DI
 builder.Services.AddSingleton(resolver =>
     resolver.GetRequiredService<IOptions<JwtSettings>>().Value);
 
-// Add services to the container.
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IOpenAIService, OpenAIService>();
 builder.Services.AddScoped<LogExecutionFilter>();
@@ -85,17 +115,23 @@ builder.Services.AddControllers(options =>
 
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
+app.UseMiddleware<ErrorHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var desc in provider.ApiVersionDescriptions)
+        {
+            c.SwaggerEndpoint($"/swagger/{desc.GroupName}/swagger.json",
+                              desc.GroupName.ToUpperInvariant());
+        }
+    });
 }
 else
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
