@@ -1,8 +1,10 @@
 ﻿using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
 using HealthyU.Controllers.BaseController;
-
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace HealthyU.WebApi.Controllers
 {
@@ -13,6 +15,29 @@ namespace HealthyU.WebApi.Controllers
         public UserController(IUserService userService)
         {
             _userService = userService;
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(idClaim, out var userId))
+                return Unauthorized("Invalid token");
+
+            var result = await _userService.GetUserById(userId);
+            if (result.IsFailure)
+                return NotFound(result.Error);
+
+            return Ok(result.Value);
+        }
+
+        [Authorize(Roles = "admin")]
+        [HttpGet]
+        public async Task<IActionResult> GetAdminStats()
+        {
+            int totalUsers = await _userService.CountUsersAsync();
+            return Ok(new { totalUsers });
         }
 
 

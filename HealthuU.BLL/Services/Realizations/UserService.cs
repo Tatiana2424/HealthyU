@@ -57,4 +57,12 @@ public class UserService : IUserService
         await _repositoryWrapper.SaveChangesAsync();
         return Result.Success(_mapper.Map<UserDTO>(user));
     }
+
+    public async Task<int> CountUsersAsync()
+    {
+        return await _repositoryWrapper
+                    .UserRepository
+                    .FindAll()
+                    .CountAsync();
+    }
 }

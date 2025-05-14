@@ -16,6 +16,9 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using HealthyU.WebApi.Middlewares;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using HealthyU.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpenAI>(builder.Configuration.GetSection("OpenAI"));
@@ -70,10 +73,30 @@ builder.Services.AddSwaggerGen(c =>
         });
     }
 
-    // додаємо XML-документацію
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header. Enter only your token.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
 });
 
 builder.Services.AddCustomServices();
@@ -92,9 +115,12 @@ builder.Services.AddAuthentication(x =>
     x.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false,
-        ValidateAudience = false
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Key)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ClockSkew = TimeSpan.Zero
     };
 });
 builder.Services.AddControllers();
@@ -115,6 +141,7 @@ builder.Services.AddControllers(options =>
 
 
 var app = builder.Build();
+await app.Services.EnsureRolesAndAdminAsync();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {

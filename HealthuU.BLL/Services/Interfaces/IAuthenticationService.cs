@@ -10,7 +10,9 @@ namespace HealthuU.BLL.Services.Interfaces
 {
     public interface IAuthenticationService
     {
-        Task<(string Token, int UserId)> LoginUserAsync(LoginDto loginDto);
-        Task<(string Token, int UserId)> RegisterUserAsync(RegisterDto registerDto);
+        Task<(string Token, string RefreshToken, int UserId)> LoginUserAsync(LoginDTO loginDto);
+        Task<(string Token, string RefreshToken, int UserId)> RegisterUserAsync(RegisterDTO registerDto);
+        Task<(string Token, string RefreshToken)> RefreshTokenAsync(string token);
+        Task RevokeRefreshTokenAsync(string token);
     }
 }

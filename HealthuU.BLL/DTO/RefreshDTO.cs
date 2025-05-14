@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace HealthuU.BLL.DTO
 {
-    public class LoginDTO
+    public class RefreshDTO
     {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

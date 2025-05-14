@@ -14,4 +14,5 @@ public interface IUserService
 {
     Task<Result<UserDTO>> GetUserById(int userId);
     Task<Result<UserDTO>> UpdateUser(int userId, UserDTO userDTO);
+    Task<int> CountUsersAsync();
 }

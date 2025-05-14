@@ -1,7 +1,9 @@
 ﻿using HealthyU.DAL.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-public class HealthyUDbContext : DbContext
+public class HealthyUDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
     public DbSet<Recipe> Recipes { get; set; }
     public DbSet<RecipeNutrition> RecipeNutritions { get; set; }
@@ -15,6 +17,7 @@ public class HealthyUDbContext : DbContext
     public DbSet<Image> Images { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<BMIData> BMIData { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public HealthyUDbContext(DbContextOptions<HealthyUDbContext> options)
         : base(options)

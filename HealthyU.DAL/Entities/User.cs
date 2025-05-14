@@ -9,12 +9,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthyU.DAL.Entities;
 
-public class User : IdentityUser
+public class User : IdentityUser<int>
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
-
     [StringLength(100)]
     public string? FirstName { get; set; }
 

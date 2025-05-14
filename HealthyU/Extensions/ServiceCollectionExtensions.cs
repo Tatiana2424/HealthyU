@@ -24,9 +24,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddScoped<IArticleRepository, ArticleRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IImageRepository, ImageRepository>();
         services.AddScoped<ISearchKeywordRepository, SearchKeywordRepository>();
-        services.AddScoped<IBmiService, BmiService>();
     }
     public static void AddCustomServices(this IServiceCollection services)
     {
@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<HealthuU.BLL.Services.Interfaces.IAuthenticationService, HealthuU.BLL.Services.Realizations.AuthenticationService>();
         services.AddScoped<IRecipeImportService, RecipeImportService>();
+        services.AddScoped<IBmiService, BmiService>();
         //services.AddTransient(typeof(ILoggerService<>), typeof(LoggerService<>));
         services.AddScoped(typeof(ILoggerService<>), typeof(LoggerService<>));
         //services.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>));
@@ -58,7 +59,7 @@ public static class ServiceCollectionExtensions
             });
         });
 
-        services.AddIdentity<User, IdentityRole>(options =>
+        services.AddIdentity<User, IdentityRole<int>>(options =>
         {
             options.Password.RequireDigit = true;
             options.Password.RequiredLength = 6;
