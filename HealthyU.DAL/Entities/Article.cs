@@ -16,13 +16,13 @@ public class Article
 
     [MaxLength(100)]
     [Required]
-    public string Title { get; set; }
+    public string Title { get; set; } = string.Empty;
 
     [Required]
-    public string Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     [Required]
-    public string ArticleText { get; set; }
+    public string ArticleText { get; set; } = string.Empty;
 
     public int ImageId { get; set; }
 
@@ -31,4 +31,7 @@ public class Article
     public bool IsPublished { get; set; }
 
     public int? UserId { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = [];
 }

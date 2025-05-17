@@ -11,9 +11,9 @@ namespace HealthuU.BLL.DTO;
 public class ArticleDTO
 {
     public int Id { get; set; }
-    public string Title { get; set; }
-    public string Description { get; set; }
-    public string ArticleText { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string ArticleText { get; set; } = string.Empty;
     public int ImageId { get; set; }
     public ImageDTO? Image { get; set; }
     public bool IsPublished { get; set; }

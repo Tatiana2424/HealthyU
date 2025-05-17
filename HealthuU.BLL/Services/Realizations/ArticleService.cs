@@ -98,35 +98,11 @@ public class ArticleService : IArticleService
         return Result.Success();
     }
 
-
     public async Task<Result<ArticleDTO>> CreateArticle(ArticleDTO articleDTO)
     {
-        if (articleDTO.Image != null)
-        {
-            var imageDTO = await _imageService.CreateOrUpdateImageAsync(articleDTO.Image);
-            articleDTO.ImageId = imageDTO.Id;
-        }
+        using var transaction = await _repositoryWrapper.BeginTransactionAsync();
 
-        var article = _mapper.Map<Article>(articleDTO);
-        _repositoryWrapper.ArticleRepository.Create(article);
-        await _repositoryWrapper.SaveChangesAsync();
-        return Result.Success(_mapper.Map<ArticleDTO>(article));
-    }
-
-
-    public async Task<Result> ImportArticlesFromJsonFileAsync()
-    {
-        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        string filePath = Path.Combine(desktopPath, "articles.json");
-        string jsonString = await File.ReadAllTextAsync(filePath);
-        var articlesDTO = System.Text.Json.JsonSerializer.Deserialize<List<ArticleDTO>>(jsonString);
-
-        if (articlesDTO == null)
-        {
-            return Result.Failure("Failed to deserialize JSON.");
-        }
-
-        foreach (var articleDTO in articlesDTO)
+        try
         {
             if (articleDTO.Image != null)
             {
@@ -136,10 +112,55 @@ public class ArticleService : IArticleService
 
             var article = _mapper.Map<Article>(articleDTO);
             _repositoryWrapper.ArticleRepository.Create(article);
-        }
+            await _repositoryWrapper.SaveChangesAsync();
 
-        await _repositoryWrapper.SaveChangesAsync();
-        return Result.Success();
+            await transaction.CommitAsync();
+            return Result.Success(_mapper.Map<ArticleDTO>(article));
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Result.Failure<ArticleDTO>($"Failed to create article: {ex.Message}");
+        }
+    }
+
+    public async Task<Result> ImportArticlesFromJsonFileAsync()
+    {
+        using var transaction = await _repositoryWrapper.BeginTransactionAsync();
+
+        try
+        {
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string filePath = Path.Combine(desktopPath, "articles.json");
+            string jsonString = await File.ReadAllTextAsync(filePath);
+            var articlesDTO = System.Text.Json.JsonSerializer.Deserialize<List<ArticleDTO>>(jsonString);
+
+            if (articlesDTO == null)
+            {
+                return Result.Failure("Failed to deserialize JSON.");
+            }
+
+            foreach (var articleDTO in articlesDTO)
+            {
+                if (articleDTO.Image != null)
+                {
+                    var imageDTO = await _imageService.CreateOrUpdateImageAsync(articleDTO.Image);
+                    articleDTO.ImageId = imageDTO.Id;
+                }
+
+                var article = _mapper.Map<Article>(articleDTO);
+                _repositoryWrapper.ArticleRepository.Create(article);
+            }
+
+            await _repositoryWrapper.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Result.Failure($"Import failed: {ex.Message}");
+        }
     }
 
     public async Task<Result<bool>> DeleteArticle(int articleId)
@@ -176,7 +197,14 @@ public class ArticleService : IArticleService
 
         _mapper.Map(articleDTO, article);
         _repositoryWrapper.ArticleRepository.Update(article);
-        await _repositoryWrapper.SaveChangesAsync();
+        try
+        {
+            await _repositoryWrapper.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Result.Failure<ArticleDTO>("The article was modified by another user.");
+        }
         return Result.Success(_mapper.Map<ArticleDTO>(article));
     }
 

@@ -3,6 +3,7 @@
 
 using HealthyU.DAL.Repositories.Interfaces;
 using HealthyU.DAL.Repositories.Interfaces.Base;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace HealthyU.DAL.Repositories.Realizations.Base;
 
@@ -193,4 +194,8 @@ public class RepositoryWrapper : IRepositoryWrapper
         return await _healthUShopDbContext.SaveChangesAsync();
     }
 
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        return await _healthUShopDbContext.Database.BeginTransactionAsync();
+    }
 }

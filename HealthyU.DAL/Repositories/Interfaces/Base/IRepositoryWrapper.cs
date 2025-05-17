@@ -1,4 +1,5 @@
 using HealthyU.DAL.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace HealthyU.DAL.Repositories.Interfaces.Base;
 
@@ -20,4 +21,6 @@ public interface IRepositoryWrapper
     public int SaveChanges();
 
     public Task<int> SaveChangesAsync();
+
+    public Task<IDbContextTransaction> BeginTransactionAsync();
 }
