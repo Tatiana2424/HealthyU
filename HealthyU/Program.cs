@@ -19,6 +19,7 @@ using HealthyU.WebApi.Middlewares;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using HealthyU.WebApi.Extensions;
+using HealthuU.BLL.Services.Interfaces.Encryption;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpenAI>(builder.Configuration.GetSection("OpenAI"));
@@ -29,6 +30,13 @@ builder.Services.Configure<JwtSettings>(jwtSettingsSection);
 
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 var key = Encoding.ASCII.GetBytes(jwtSettings.Key);
+
+builder.Services.Configure<AesSettings>(
+    builder.Configuration.GetSection("AesSettings")
+);
+builder.Services.Configure<RsaSettings>(
+    builder.Configuration.GetSection("RsaSettings")
+);
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddRazorPages();
@@ -142,6 +150,10 @@ builder.Services.AddControllers(options =>
 
 var app = builder.Build();
 await app.Services.EnsureRolesAndAdminAsync();
+using var scope = app.Services.CreateScope();
+var keyProv = scope.ServiceProvider.GetRequiredService<IRsaKeyProvider>();
+keyProv.GenerateAndSaveKeyPair();
+
 app.UseMiddleware<ErrorHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
