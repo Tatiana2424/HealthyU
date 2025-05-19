@@ -14,5 +14,10 @@ namespace HealthuU.BLL.Services.Interfaces
         Task<(string Token, string RefreshToken, int UserId)> RegisterUserAsync(RegisterDTO registerDto);
         Task<(string Token, string RefreshToken)> RefreshTokenAsync(string token);
         Task RevokeRefreshTokenAsync(string token);
+        Task<(string Token, string RefreshToken, int UserId)> ExternalLoginAsync(
+            string provider,
+            string providerKey,
+            string email
+        );
     }
 }

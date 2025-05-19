@@ -145,7 +145,36 @@ namespace HealthuU.BLL.Services.Realizations
             await _refreshTokenRepository.UpdateAsync(stored);
         }
 
+        public async Task<(string Token, string RefreshToken, int UserId)> ExternalLoginAsync(string provider, string providerKey, string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
 
+            if (user == null)
+            {
+                user = new User
+                {
+                    UserName = email,
+                    Email = email,
+                    Role = "user"
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                    throw new Exception($"External user creation failed: {errors}");
+                }
+
+                await _userManager.AddToRoleAsync(user, "user");
+            }
+
+            var jwtToken = await GenerateJwtTokenAsync(user);
+
+            var refreshEntity = GenerateRefreshToken(user.Id);
+            await _refreshTokenRepository.AddAsync(refreshEntity);
+
+            return (jwtToken, refreshEntity.Token, user.Id);
+        }
     }
 
 }
