@@ -6,6 +6,7 @@ using HealthyU.Controllers.BaseController;
 using HealthyU.DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace HealthyU.WebApi.Controllers;
 
@@ -31,6 +32,7 @@ public class ArticleController : BaseApiController
     [HttpGet]
     [MapToApiVersion("1.0")]
     [ActionName("GetAll")]
+    [OutputCache]
     public async Task<ActionResult<IEnumerable<ArticleDTO>>> GetAllV1()
     {
         _logger.LogInformation("Logger1 ID");

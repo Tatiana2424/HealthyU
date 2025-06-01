@@ -3,12 +3,14 @@
 using CSharpFunctionalExtensions;
 
 using HealthuU.BLL.DTO;
+using HealthuU.BLL.Services.Interfaces.Cache;
 using HealthuU.BLL.Services.Realizations;
 
 using HealthyU.DAL.Entities;
 using HealthyU.DAL.Repositories.Interfaces.Base;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Newtonsoft.Json;
 
@@ -26,61 +28,97 @@ public class ArticleService : IArticleService
     private readonly IMapper _mapper;
     private readonly IRepositoryWrapper _repositoryWrapper;
     private readonly IImageService _imageService;
-    public ArticleService(IRepositoryWrapper repositoryWrapper, IMapper mapper, IImageService imageService)
+    private readonly ICacheService _cacheService;
+    public ArticleService(
+        IRepositoryWrapper repositoryWrapper, 
+        IMapper mapper,
+        IImageService imageService,
+        ICacheService cacheService)
     {
         _repositoryWrapper = repositoryWrapper;
         _mapper = mapper;
         _imageService = imageService;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<List<ArticleDTO>>> GetAllArticles()
     {
-        var articles = await _repositoryWrapper
-        .ArticleRepository
-        .GetAllAsync(
-            predicate: a => a.IsPublished,
-            include: q => q.Include(x => x.Image)
+        var articlesDTO = await _cacheService.GetOrSetAsync(
+            $"{nameof(ArticleService)}|GetAllArticles",
+            async () =>
+            {
+                var articles = await _repositoryWrapper
+                    .ArticleRepository
+                    .GetAllAsync(
+                        predicate: a => a.IsPublished,
+                        include: q => q.Include(x => x.Image)
+                    );
+                return _mapper.Map<List<ArticleDTO>>(articles);
+            }
         );
-        var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<List<ArticleDTO>>> GetAllArticlesWithoutSelected(int id)
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
-                predicate: a => a.Id != id,
-                include: q => q.Include(x => x.Image)!
+        var articlesDTO = await _cacheService.GetOrSetAsync(
+                $"{nameof(ArticleService)}|GetAllArticlesWithoutSelected|{id}",
+                async () =>
+                {
+                    var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                        predicate: a => a.Id != id,
+                        include: q => q.Include(x => x.Image)
+                    );
+                    return _mapper.Map<List<ArticleDTO>>(articles);
+                }
             );
-        var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<List<ArticleDTO>>> GetUnpublishedArticles()
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
-                predicate: a => !a.IsPublished,
-                include: q => q.Include(x => x.Image)!
+        var articlesDTO = await _cacheService.GetOrSetAsync(
+                $"{nameof(ArticleService)}|GetUnpublishedArticles",
+                async () =>
+                {
+                    var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                        predicate: a => !a.IsPublished,
+                        include: q => q.Include(x => x.Image)
+                    );
+                    return _mapper.Map<List<ArticleDTO>>(articles);
+                }
             );
-        var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
     public async Task<Result<ArticleDTO>> GetArticleById(int articleId)
     {
-        var article = await _repositoryWrapper.ArticleRepository.GetFirstOrDefaultAsync(
-                predicate: a => a.Id == articleId,
-                include: q => q.Include(x => x.Image)!
+        var articlesDTO = await _cacheService.GetOrSetAsync(
+                $"{nameof(ArticleService)}|GetArticleById|{articleId}",
+                async () =>
+                {
+                    var article = await _repositoryWrapper.ArticleRepository.GetFirstOrDefaultAsync(
+                        predicate: a => a.Id == articleId,
+                        include: q => q.Include(x => x.Image)
+                    );
+                    return _mapper.Map<ArticleDTO>(article);
+                }
             );
-        var articlesDTO = _mapper.Map<ArticleDTO>(article);
         return Result.Success(articlesDTO);
     }
     public async Task<Result<List<ArticleDTO>>> GetArticlesByUserId(int userId)
     {
-        var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
-                predicate: a => a.UserId == userId,
-                include: q => q.Include(x => x.Image)!
+        var articlesDTO = await _cacheService.GetOrSetAsync(
+                $"{nameof(ArticleService)}|GetArticlesByUserId|{userId}",
+                async () =>
+                {
+                    var articles = await _repositoryWrapper.ArticleRepository.GetAllAsync(
+                        predicate: a => a.UserId == userId,
+                        include: q => q.Include(x => x.Image)
+                    );
+                    return _mapper.Map<List<ArticleDTO>>(articles);
+                }
             );
-        var articlesDTO = _mapper.Map<List<ArticleDTO>>(articles);
         return Result.Success(articlesDTO);
     }
 
@@ -113,6 +151,8 @@ public class ArticleService : IArticleService
             var article = _mapper.Map<Article>(articleDTO);
             _repositoryWrapper.ArticleRepository.Create(article);
             await _repositoryWrapper.SaveChangesAsync();
+
+            _cacheService.Invalidate($"{nameof(ArticleService)}|GetAllArticles");
 
             await transaction.CommitAsync();
             return Result.Success(_mapper.Map<ArticleDTO>(article));
@@ -153,6 +193,10 @@ public class ArticleService : IArticleService
             }
 
             await _repositoryWrapper.SaveChangesAsync();
+
+            _cacheService.Invalidate("ArticleService_GetAllArticles");
+            _cacheService.Invalidate("ArticleService_GetUnpublishedArticles");
+
             await transaction.CommitAsync();
             return Result.Success();
         }
@@ -173,6 +217,10 @@ public class ArticleService : IArticleService
 
         _repositoryWrapper.ArticleRepository.Delete(article);
         await _repositoryWrapper.SaveChangesAsync();
+
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetAllArticles");
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetArticleById|{articleId}");
+        
         return Result.Success(true);
     }
 
@@ -205,6 +253,9 @@ public class ArticleService : IArticleService
         {
             return Result.Failure<ArticleDTO>("The article was modified by another user.");
         }
+
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetAllArticles");
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetArticleById|{articleId}");
         return Result.Success(_mapper.Map<ArticleDTO>(article));
     }
 
@@ -219,6 +270,10 @@ public class ArticleService : IArticleService
         article.IsPublished = isPublish;
         _repositoryWrapper.ArticleRepository.Update(article);
         await _repositoryWrapper.SaveChangesAsync();
+
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetAllArticles");
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetUnpublishedArticles");
+        _cacheService.Invalidate($"{nameof(ArticleService)}|GetArticleById|{id}");
         return Result.Success(_mapper.Map<ArticleDTO>(article));
     }
 }

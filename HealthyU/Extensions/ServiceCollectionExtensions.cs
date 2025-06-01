@@ -15,6 +15,8 @@ using HealthuU.BLL.Services.Realizations;
 using HealthyU.DAL.Entities;
 using HealthuU.BLL.Services.Interfaces.Encryption;
 using HealthuU.BLL.Services.Realizations.Encryption;
+using HealthuU.BLL.Services.Interfaces.Cache;
+using HealthuU.BLL.Services.Realizations.Cache;
 
 namespace BarberShop.WebApi.Extensions;
 
@@ -49,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHybridEncryptionService, HybridEncryptionService>();
         services.AddScoped<IAesEncryptionService, AesEncryptionService>();
         services.AddScoped<IRecipeImportService, RecipeImportService>();
+        services.AddSingleton<ICacheService, MemoryCacheService>();
         services.AddScoped<IBmiService, BmiService>();
         //services.AddTransient(typeof(ILoggerService<>), typeof(LoggerService<>));
         services.AddScoped(typeof(ILoggerService<>), typeof(LoggerService<>));

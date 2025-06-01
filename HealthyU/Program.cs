@@ -16,12 +16,11 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using HealthyU.WebApi.Middlewares;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 using HealthyU.WebApi.Extensions;
 using HealthuU.BLL.Services.Interfaces.Encryption;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.OutputCaching;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<OpenAI>(builder.Configuration.GetSection("OpenAI"));
@@ -158,7 +157,25 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<LogExecutionFilter>();
 });
+builder.Services.AddMemoryCache();
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(builder =>
+    {
+        builder.Expire(TimeSpan.FromSeconds(10));
+    });
 
+    options.AddPolicy("Expire20", builder =>
+    {
+        builder.Expire(TimeSpan.FromSeconds(20));
+    });
+
+
+    options.AddPolicy("Expire30", builder =>
+    {
+        builder.Expire(TimeSpan.FromSeconds(30));
+    });
+});
 
 var app = builder.Build();
 await app.Services.EnsureRolesAndAdminAsync();
@@ -188,6 +205,7 @@ else
 
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
 
