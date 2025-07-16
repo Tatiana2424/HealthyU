@@ -34,6 +34,16 @@ public class FakeHttpHandler : HttpMessageHandler
 
 public class RecipeImportServiceTests
 {
+    private readonly Mock<IHttpClientFactory> _mockFactory;
+
+    private readonly Mock<IRecipeService> _mockRecipeService;
+
+    public RecipeImportServiceTests()
+    {
+        _mockFactory = new Mock<IHttpClientFactory>();
+        _mockRecipeService = new Mock<IRecipeService>();
+    }
+
     private ApiRecipe CreateFullDummyRecipe(string name)
     {
         return new ApiRecipe
@@ -87,8 +97,7 @@ public class RecipeImportServiceTests
         var handler = new FakeHttpHandler(rawJson);
         var httpClient = new HttpClient(handler);
 
-        var mockFactory = new Mock<IHttpClientFactory>();
-        mockFactory
+        _mockFactory
             .Setup(f => f.CreateClient(It.IsAny<string>()))
             .Returns(httpClient);
 
@@ -96,20 +105,20 @@ public class RecipeImportServiceTests
         {
             new() { Name = "Exist" }
         };
-        var mockRecipeService = new Mock<IRecipeService>();
-        mockRecipeService
+
+        _mockRecipeService
             .Setup(s => s.GetAllBaseRecipeData())
             .ReturnsAsync(Result.Success(existing));
 
         var created = new List<RecipeDTO>();
-        mockRecipeService
+        _mockRecipeService
             .Setup(s => s.CreateRecipeAsync(It.IsAny<RecipeDTO>()))
             .Callback<RecipeDTO>(created.Add)
             .Returns(Task.CompletedTask);
 
         var svc = new RecipeImportService(
-            mockRecipeService.Object,
-            mockFactory.Object,
+            _mockRecipeService.Object,
+            _mockFactory.Object,
             Mock.Of<IRecipeRepository>(),          
             Mock.Of<ILoggerService<FileResourceHolder>>()    
         );
@@ -122,8 +131,6 @@ public class RecipeImportServiceTests
         Assert.Equal("NewOne", created[0].Name);    
     }
 
-
-
     [Fact]
     public async Task ImportRecipesAsync_WhenNoResults_DoesNotCallCreate()
     {
@@ -131,25 +138,23 @@ public class RecipeImportServiceTests
         var rawJson = JsonConvert.SerializeObject(new ApiResponse { Results = null });
         var handler = new FakeHttpHandler(rawJson);
         var httpClient = new HttpClient(handler);
-        var mockFactory = new Mock<IHttpClientFactory>();
-        mockFactory
+        _mockFactory
             .Setup(f => f.CreateClient(It.IsAny<string>()))
             .Returns(httpClient);
 
-        var mockRecipeService = new Mock<IRecipeService>();
-        mockRecipeService
+        _mockRecipeService
             .Setup(s => s.GetAllBaseRecipeData())
             .ReturnsAsync(Result.Success(new List<RecipeDTO>()));
 
         int createCalls = 0;
-        mockRecipeService
+        _mockRecipeService
             .Setup(s => s.CreateRecipeAsync(It.IsAny<RecipeDTO>()))
             .Callback(() => createCalls++)
             .Returns(Task.CompletedTask);
 
         var svc = new RecipeImportService(
-            mockRecipeService.Object,
-            mockFactory.Object,
+            _mockRecipeService.Object,
+            _mockFactory.Object,
             Mock.Of<IRecipeRepository>(),
             Mock.Of<ILoggerService<FileResourceHolder>>());
 

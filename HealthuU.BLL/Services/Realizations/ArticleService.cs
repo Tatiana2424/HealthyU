@@ -136,7 +136,7 @@ public class ArticleService : IArticleService
         return Result.Success();
     }
 
-    public async Task<Result<ArticleDTO>> CreateArticle(ArticleDTO articleDTO)
+    public async Task<Result<ArticleDTO>> CreateArticleWithTransaction(ArticleDTO articleDTO)
     {
         using var transaction = await _repositoryWrapper.BeginTransactionAsync();
 
@@ -160,6 +160,30 @@ public class ArticleService : IArticleService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            return Result.Failure<ArticleDTO>($"Failed to create article: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<ArticleDTO>> CreateArticle(ArticleDTO articleDTO)
+    {
+        try
+        {
+            if (articleDTO.Image != null)
+            {
+                var imageDTO = await _imageService.CreateOrUpdateImageAsync(articleDTO.Image);
+                articleDTO.ImageId = imageDTO.Id;
+            }
+
+            var article = _mapper.Map<Article>(articleDTO);
+            _repositoryWrapper.ArticleRepository.Create(article);
+            await _repositoryWrapper.SaveChangesAsync();
+
+            _cacheService.Invalidate($"{nameof(ArticleService)}|GetAllArticles");
+
+            return Result.Success(_mapper.Map<ArticleDTO>(article));
+        }
+        catch (Exception ex)
+        {
             return Result.Failure<ArticleDTO>($"Failed to create article: {ex.Message}");
         }
     }

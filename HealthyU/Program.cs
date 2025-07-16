@@ -219,3 +219,8 @@ app.MapRazorPages();
 app.MapControllers();
 
 app.Run();
+
+namespace HealthyU.WebApi
+{
+    public partial class Program { }
+}
