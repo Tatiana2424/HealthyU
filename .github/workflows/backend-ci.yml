@@ -20,7 +20,11 @@ jobs:
           dotnet-version: "8.0.x"
 
       - run: dotnet restore
-
       - run: dotnet build --configuration $BUILD_CONFIG --no-restore
 
-      - run: dotnet test --configuration $BUILD_CONFIG --no-build --verbosity normal
+      - name: Run unit tests
+        run: |
+          dotnet test \
+            ./HealthyU.Tests/HealthyU.Tests.csproj \
+            --configuration $BUILD_CONFIG \
+            --no-build --verbosity normal
