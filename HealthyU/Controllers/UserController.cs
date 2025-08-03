@@ -3,7 +3,6 @@ using HealthuU.BLL.Services.Interfaces;
 using HealthyU.Controllers.BaseController;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace HealthyU.WebApi.Controllers;
