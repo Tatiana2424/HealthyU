@@ -6,83 +6,82 @@ using HealthyU.Controllers.BaseController;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
-namespace HealthyU.WebApi.Controllers
+namespace HealthyU.WebApi.Controllers;
+
+
+public class AuthController : BaseApiController
 {
+    private readonly IAuthenticationService _authenticationService;
 
-    public class AuthController : BaseApiController
+    public AuthController(IAuthenticationService authenticationService)
     {
-        private readonly IAuthenticationService _authenticationService;
+        _authenticationService = authenticationService;
+    }
 
-        public AuthController(IAuthenticationService authenticationService)
+    [HttpPost]
+    public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
+    {
+        try
         {
-            _authenticationService = authenticationService;
+            var (token, refreshToken, userId) = await _authenticationService.RegisterUserAsync(registerDto);
+            return Ok(new
+            {
+                token,
+                refreshToken,
+                userId
+            });
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
+    [HttpPost]
+    public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
+    {
+        try
         {
-            try
+            var (token, refreshToken, userId) = await _authenticationService.LoginUserAsync(loginDto);
+            return Ok(new
             {
-                var (token, refreshToken, userId) = await _authenticationService.RegisterUserAsync(registerDto);
-                return Ok(new
-                {
-                    token,
-                    refreshToken,
-                    userId
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+                token,
+                refreshToken,
+                userId
+            });
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
+    [HttpPost]
+    public async Task<IActionResult> Refresh([FromBody] RefreshDTO dto)
+    {
+        try
         {
-            try
+            var (token, refreshToken) = await _authenticationService.RefreshTokenAsync(dto.RefreshToken);
+            return Ok(new
             {
-                var (token, refreshToken, userId) = await _authenticationService.LoginUserAsync(loginDto);
-                return Ok(new
-                {
-                    token,
-                    refreshToken,
-                    userId
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+                token,
+                refreshToken
+            });
         }
+        catch (SecurityTokenException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> Refresh([FromBody] RefreshDTO dto)
-        {
-            try
-            {
-                var (token, refreshToken) = await _authenticationService.RefreshTokenAsync(dto.RefreshToken);
-                return Ok(new
-                {
-                    token,
-                    refreshToken
-                });
-            }
-            catch (SecurityTokenException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Revoke([FromBody] RefreshDTO dto)
-        {
-            await _authenticationService.RevokeRefreshTokenAsync(dto.RefreshToken);
-            return NoContent();
-        }
+    [HttpPost]
+    public async Task<IActionResult> Revoke([FromBody] RefreshDTO dto)
+    {
+        await _authenticationService.RevokeRefreshTokenAsync(dto.RefreshToken);
+        return NoContent();
     }
 }

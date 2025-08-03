@@ -6,66 +6,65 @@ using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace HealthyU.WebApi.Controllers
+namespace HealthyU.WebApi.Controllers;
+
+public class UserController : BaseApiController
 {
-    public class UserController : BaseApiController
+    public readonly IUserService _userService;
+
+    public UserController(IUserService userService)
     {
-        public readonly IUserService _userService;
+        _userService = userService;
+    }
 
-        public UserController(IUserService userService)
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idClaim, out var userId))
+            return Unauthorized("Invalid token");
+
+        var result = await _userService.GetUserById(userId);
+        if (result.IsFailure)
+            return NotFound(result.Error);
+
+        return Ok(result.Value);
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpGet]
+    public async Task<IActionResult> GetAdminStats()
+    {
+        int totalUsers = await _userService.CountUsersAsync();
+        return Ok(new { totalUsers });
+    }
+
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _userService.GetUserById(id);
+        if (result.IsSuccess)
         {
-            _userService = userService;
-        }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetMyProfile()
-        {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(idClaim, out var userId))
-                return Unauthorized("Invalid token");
-
-            var result = await _userService.GetUserById(userId);
-            if (result.IsFailure)
-                return NotFound(result.Error);
-
             return Ok(result.Value);
         }
+        return NotFound(result.Error);
+    }
 
-        [Authorize(Roles = "admin")]
-        [HttpGet]
-        public async Task<IActionResult> GetAdminStats()
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UserDTO userDTO)
+    {
+        if (!ModelState.IsValid)
         {
-            int totalUsers = await _userService.CountUsersAsync();
-            return Ok(new { totalUsers });
+            return BadRequest(ModelState);
         }
 
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        var result = await _userService.UpdateUser(id, userDTO);
+        if (result.IsSuccess)
         {
-            var result = await _userService.GetUserById(id);
-            if (result.IsSuccess)
-            {
-                return Ok(result.Value);
-            }
-            return NotFound(result.Error);
+            return Ok(result.Value);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UserDTO userDTO)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _userService.UpdateUser(id, userDTO);
-            if (result.IsSuccess)
-            {
-                return Ok(result.Value);
-            }
-            return BadRequest(result.Error);
-        }
+        return BadRequest(result.Error);
     }
 }

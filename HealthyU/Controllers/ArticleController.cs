@@ -3,8 +3,6 @@ using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
 using HealthuU.BLL.Services.Interfaces.Logging;
 using HealthyU.Controllers.BaseController;
-using HealthyU.DAL.Entities;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
