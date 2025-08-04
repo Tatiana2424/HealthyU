@@ -36,11 +36,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push image
-        env:
-          IMAGE_URI: ghcr.io/${{ github.repository }}:${{ github.sha }}
         run: |
+          IMAGE_REPO=$(echo "ghcr.io/${GITHUB_REPOSITORY,,}")
+          IMAGE_URI=${IMAGE_REPO}:${GITHUB_SHA}
+
           docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
+          docker push  $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
   deploy-render:
