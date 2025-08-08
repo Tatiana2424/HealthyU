@@ -1,6 +1,4 @@
-﻿
-
-using HealthuU.BLL.DTO;
+﻿using HealthuU.BLL.DTO;
 using HealthuU.BLL.Services.Interfaces;
 
 using HealthyU.Controllers.BaseController;
