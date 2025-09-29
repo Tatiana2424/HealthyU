@@ -61,9 +61,10 @@ jobs:
         with:
           app-name: 'demo-b-healthyu'
           slot-name: 'Production'
-          package: .net-app
+          package: .
 
 
           
+
 
 
