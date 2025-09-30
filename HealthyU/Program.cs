@@ -17,7 +17,6 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using HealthyU.WebApi.Middlewares;
 using HealthyU.WebApi.Extensions;
-using HealthuU.BLL.Services.Interfaces.Encryption;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.OutputCaching;
@@ -32,12 +31,12 @@ builder.Services.Configure<JwtSettings>(jwtSettingsSection);
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 var key = Encoding.ASCII.GetBytes(jwtSettings.Key);
 
-builder.Services.Configure<AesSettings>(
-    builder.Configuration.GetSection("AesSettings")
-);
-builder.Services.Configure<RsaSettings>(
-    builder.Configuration.GetSection("RsaSettings")
-);
+//builder.Services.Configure<AesSettings>(
+//    builder.Configuration.GetSection("AesSettings")
+//);
+//builder.Services.Configure<RsaSettings>(
+//    builder.Configuration.GetSection("RsaSettings")
+//);
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddRazorPages();
@@ -180,8 +179,8 @@ builder.Services.AddOutputCache(options =>
 var app = builder.Build();
 await app.Services.EnsureRolesAndAdminAsync();
 using var scope = app.Services.CreateScope();
-var keyProv = scope.ServiceProvider.GetRequiredService<IRsaKeyProvider>();
-keyProv.GenerateAndSaveKeyPair();
+//var keyProv = scope.ServiceProvider.GetRequiredService<IRsaKeyProvider>();
+//keyProv.GenerateAndSaveKeyPair();
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
